@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simuladores Ubuntu — C2-DECT v3.6.1</title>
+<style>
+  :root{
+    --bg:#0b0c10;
+    --panel:#12141c;
+    --border:#2a2e3e;
+    --text:#c5c6c7;
+    --muted:#6e7280;
+    --green:#1abc9c;
+    --green-dim:#0e8a76;
+    --red:#e74c3c;
+    --red-dim:#b3402e;
+    --yellow:#f1c40f;
+    --blue:#3498db;
+    --cyan:#00d2ff;
+    --magenta:#9b59b6;
+    --accent:#7f8c8d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);
+    min-height:100vh;line-height:1.5;
+  }
+  a{color:var(--cyan);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ===== LAYOUT ===== */
+  header{
+    background:linear-gradient(135deg,#12141c 0%,#0b0c10 100%);
+    border-bottom:1px solid var(--border);
+    padding:1.2rem 2rem;position:sticky;top:0;z-index:100;
+  }
+  .header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:.6rem;font-size:1.25rem;font-weight:700;color:var(--cyan)}
+  .brand .dot{width:10px;height:10px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green)}
+  .tagline{color:var(--muted);font-size:.9rem}
+  nav{margin-left:auto;display:flex;gap:.5rem;flex-wrap:wrap}
+  nav a{
+    color:var(--text);padding:.5rem .9rem;border:1px solid var(--border);border-radius:6px;
+    font-size:.85rem;background:var(--panel);transition:.2s
+  }
+  nav a:hover{border-color:var(--cyan);color:var(--cyan);background:#161a28}
+
+  main{max-width:1400px;margin:0 auto;padding:2rem}
+
+  .hero{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:2.5rem 2rem;
+    margin-bottom:2rem;display:grid;grid-template-columns:1fr 320px;gap:2rem;align-items:center
+  }
+  .hero h1{font-size:2rem;color:var(--cyan);margin-bottom:.5rem}
+  .hero p{color:var(--muted);margin-bottom:1rem}
+  .hero .chip{
+    display:inline-block;padding:.25rem .6rem;border:1px solid var(--border);border-radius:20px;
+    font-size:.75rem;color:var(--muted);margin-right:.4rem;margin-bottom:.4rem
+  }
+  .hero .meta{background:#161a28;border:1px solid var(--border);border-radius:10px;padding:1rem}
+  .hero .meta div{margin-bottom:.6rem;font-size:.9rem}
+  .hero .meta b{color:var(--text)}
+
+  /* cards grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;margin-bottom:2rem}
+  .card{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.5rem;
+    display:flex;flex-direction:column;transition:.2s;position:relative;overflow:hidden
+  }
+  .card:hover{border-color:var(--cyan);transform:translateY(-3px)}
+  .card h3{font-size:1.15rem;margin-bottom:.4rem;color:var(--cyan)}
+  .card p{font-size:.88rem;color:var(--muted);margin-bottom:1rem;flex:1}
+  .card .spec{font-size:.78rem;color:var(--muted);margin-bottom:1rem}
+  .card .spec b{color:var(--text)}
+  .card .btn{
+    margin-top:auto;display:inline-block;background:var(--green);color:#003;padding:.55rem 1rem;
+    border-radius:6px;font-weight:700;text-align:center;width:100%;border:none;cursor:pointer
+  }
+  .card .btn:hover{background:var(--green-dim)}
+  .card .badge{
+    position:absolute;top:1rem;right:1rem;font-size:.7rem;padding:.2rem .5rem;border-radius:4px;
+    background:var(--red);color:#fff;border:1px solid rgba(255,255,255,.3)
+  }
+
+  /* ===== SIMULADORES (paneles ocultos) ===== */
+  .sim-section{display:none}
+  .sim-section.active{display:block}
+  .sim-header{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px 10px 0 0;
+    padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem
+  }
+  .sim-header h2{font-size:1.1rem;color:var(--cyan);display:flex;align-items:center;gap:.5rem}
+  .close-sim{
+    background:transparent;border:1px solid var(--border);color:var(--text);padding:.35rem .8rem;
+    border-radius:6px;cursor:pointer;font-size:.85rem
+  }
+  .close-sim:hover{border-color:var(--red);color:var(--red)}
+
+  .sim-body{
+    border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;
+    background:#0a0b12;min-height:420px;display:flex;flex-direction:column
+  }
+
+  /* tabs */
+  .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--panel)}
+  .tab{
+    padding:.85rem 1.2rem;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;
+    font-size:.85rem;font-weight:600;white-space:nowrap
+  }
+  .tab.active{color:var(--cyan);border-bottom-color:var(--cyan);background:#11141c}
+  .tab:hover:not(.active){color:var(--text)}
+
+  .tabpanel{padding:1rem 1.5rem;display:none}
+  .tabpanel.active{display:block}
+
+  /* ===== TERMINAL ===== */
+  .terminal{
+    flex:1;background:#050608;border:1px solid var(--border);border-radius:8px;
+    padding:1rem;overflow:auto;display:flex;flex-direction:column;gap:.5rem;
+    font-family:'Consolas','Courier New',monospace;font-size:.9rem
+  }
+  .term-line{display:flex;gap:.6rem;align-items:flex-start}
+  .prompt{color:var(--green);min-width:140px;flex-shrink:0}
+  .prompt.out{color:var(--magenta)}
+  .content{color:var(--text);white-space:pre-wrap;word-break:break-word}
+  .content.dim{color:var(--muted)}
+  .content.warn{color:var(--yellow)}
+  .content.error{color:var(--red)}
+  .content.ok{color:var(--green)}
+  .content.info{color:var(--cyan)}
+  .content.cmd{color:var(--magenta);font-weight:700}
+  .box{border:1px solid var(--border);background:#0f1117;padding:.6rem .8rem;border-radius:6px;margin:.3rem 0;font-family:monospace;font-size:.85rem;color:var(--text)}
+  .box .label{color:var(--cyan);font-weight:700;display:block;margin-bottom:.25rem}
+  .service-box{border-left:3px solid var(--blue);padding-left:.7rem}
+
+  .term-input-wrap{border-top:1px solid var(--border);padding:.7rem 1rem;background:#0a0b12;display:flex;gap:.6rem;align-items:center}
+  .term-input{
+    flex:1;background:#050608;border:1px solid var(--border);color:var(--text);padding:.5rem .7rem;
+    border-radius:4px;font-family:'Consolas','Courier New',monospace;outline:none
+  }
+  .term-input:focus{border-color:var(--cyan)}
+  .btn-term{
+    background:var(--blue);color:#fff;border:none;padding:.5rem 1rem;border-radius:4px;
+    font-weight:700;cursor:pointer;font-size:.85rem
+  }
+  .btn-term:hover{background:#2980b9}
+  .btn-term:disabled{opacity:.5;cursor:not-allowed}
+
+  .row-ctrl{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:.5rem}
+  .ctrl{
+    background:var(--panel);border:1px solid var(--border);color:var(--text);
+    padding:.4rem .8rem;border-radius:6px;font-size:.82rem;cursor:pointer
+  }
+  .ctrl:hover{border-color:var(--cyan)}
+  .ctrl.active{background:var(--green);color:#003;border-color:var(--green)}
+
+  /* login */
+  .login-wrap{max-width:340px;margin:2rem auto;display:flex;flex-direction:column;gap:.8rem}
+  .login-wrap label{font-size:.85rem;color:var(--muted)}
+  .login-wrap input{
+    width:100%;background:#050608;border:1px solid var(--border);color:var(--text);
+    padding:.55rem .7rem;border-radius:6px;font-family:monospace;outline:none
+  }
+  .login-wrap input:focus{border-color:var(--cyan)}
+  .login-wrap .err{color:var(--red);font-size:.8rem;min-height:1.2rem}
+  .login-wrap .btn{
+    background:var(--green);color:#003;border:none;padding:.6rem;border-radius:6px;
+    font-weight:700;cursor:pointer
+  }
+  .login-wrap .btn:hover{background:var(--green-dim)}
+
+  /* 3 roles panels */
+  .roles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+  .role-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem;display:flex;flex-direction:column
+  }
+  .role-card header{display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem;padding-bottom:.6rem;border-bottom:1px solid var(--border)}
+  .role-card .role-name{font-weight:700}
+  .role-card .role-server{color:var(--green)} .role-card .role-atk{color:var(--red)} .role-card .role-vic{color:var(--yellow)}
+  .role-card .cred{font-size:.75rem;color:var(--muted);font-family:monospace;margin-bottom:1rem}
+  .role-card .term{flex:1;border:1px solid var(--border);border-radius:6px;padding:.6rem;overflow:auto;background:#050608;font-family:monospace;font-size:.82rem;color:var(--text);margin-bottom:.6rem}
+  .role-card .input-wrap{display:flex;gap:.5rem}
+  .role-card input{flex:1;background:#050608;border:1px solid var(--border);color:var(--text);padding:.4rem .6rem;border-radius:4px;font-family:monospace;outline:none;font-size:.82rem}
+  .role-card input:focus{border-color:var(--cyan)}
+  .role-card .btn-send{background:var(--blue);color:#fff;border:none;padding:.4rem .8rem;border-radius:4px;cursor:pointer;font-weight:700;font-size:.8rem}
+  .role-card .btn-send:hover{background:#2980b9}
+  .role-card .hint{font-size:.72rem;color:var(--muted);border-top:1px solid var(--border);padding-top:.5rem}
+
+  /* mapa segmentos visual */
+  .mapa-wrap{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem}
+  .mapa-svg{width:100%;height:320px;background:#050608;border:1px solid var(--border);border-radius:8px;display:block;margin:0 auto 1rem}
+  .mapa-legend{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
+  .legend-item{display:flex;align-items:center;gap:.4rem;font-size:.82rem;color:var(--muted)}
+  .legend-dot{width:10px;height:10px;border-radius:50%}
+  .mapa-info{font-size:.85rem;color:var(--muted);margin-top:.6rem}
+
+  .logs-table{width:100%;border-collapse:collapse;font-family:monospace;font-size:.8rem;margin-top:.5rem}
+  .logs-table th{text-align:left;color:var(--cyan;padding:.4rem;border-bottom:1px solid var(--border)}
+  .logs-table td{padding:.35rem .4rem;border-bottom:1px solid #1a1e2a;color:var(--text)}
+  .logs-table tr:hover{background:#11141c}
+  .badge-t{display:inline-block;padding:.1rem .4rem;border-radius:4px;font-size:.7rem;border:1px solid var(--border)}
+  .tipo-ataque{color:var(--red)} .tipo-sistema{color:var(--green)} .tipo-alerta{color:var(--yellow)} .tipo-comando{color:var(--cyan)}
+
+  footer{
+    border-top:1px solid var(--border);background:var(--panel);padding:1.5rem 2rem;color:var(--muted);
+    font-size:.85rem;text-align:center;margin-top:2rem
+  }
+
+  /* util */
+  .hidden{display:none!important}
+  .empty{color:var(--muted);font-style:italic}
+  .kbd{background:#1a1e2a;border:1px solid var(--border);border-radius:4px;padding:.1rem .4rem;font-family:monospace;font-size:.75rem;color:var(--cyan)}
+
+  @media (max-width:900px){
+    .hero{grid-template-columns:1fr}
+    .roles-grid{grid-template-columns:1fr}
+    .hero .meta{margin-top:1rem}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand"><div class="dot"></div> Simuladores Ubuntu <span style="color:var(--text);font-weight:400;font-size:.9rem">· C2-DECT v3.6.1</span></div>
+    <div class="tagline">Laboratorio de simulación Red Team · Terminal Ubuntu indexado a Windows · Servidor 3 roles · Mapa de segmentos</div>
+    <nav>
+      <a href="#sim-term" onclick="openSim('sim-term')">Terminal Ubuntu → Win</a>
+      <a href="#sim-server" onclick="openSim('sim-server')">Servidor 3 roles</a>
+      <a href="#sim-mapa" onclick="openSim('sim-mapa')">Mapa de segmentos</a>
+      <a href="#" onclick="closeAllSims()">Cerrar simuladores</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div>
+      <h1>Página web simulada de los simuladores</h1>
+      <p>Reproducción interactiva de los simuladores de la carpeta <code>linux ubuntu service</code>: terminal Ubuntu indexado a Windows, servidor Ubuntu con 3 roles (servidor / atacante / víctima) y mapa de segmentos de red.</p>
+      <div>
+        <span class="chip">ubuntu_win_sim.py</span>
+        <span class="chip">ubuntu_server_sim.py</span>
+        <span class="chip">mapa_segmentos.py</span>
+        <span class="chip">launch_3_ventanas.py</span>
+      </div>
+    </div>
+    <div class="meta">
+      <div><b>Proyecto:</b> C2-DECT v3.6.1</div>
+      <div><b>Carpeta:</b> <code>linux ubuntu service</code></div>
+      <div><b>Roles del servidor:</b> admin / luis · operador1 / op123 · operador2 / op123</div>
+      <div><b>IPs simuladas:</b> 192.168.100.10 (servidor) · 192.168.100.21 (atacante) · 192.168.100.22 (víctima)</div>
+      <div><b>Uso:</b> testing de seguridad autorizado / laboratorio Red Team</div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <!-- Card 1: Terminal Ubuntu -->
+    <article class="card">
+      <span class="badge">TERMINAL</span>
+      <h3>Terminal Ubuntu indexado a Windows</h3>
+      <p>Escribe comandos de Linux y ve su equivalente de Windows ("servicio a hacer") antes de ejecutarse. Incluye 2 variantes (standard/apt), 2 IPs, modo honeypot y rama de decisión.</p>
+      <div class="spec"><b>Variantes:</b> standard · apt&nbsp;&nbsp;<b>IPs:</b> 192.168.100.10 · 192.168.100.20&nbsp;&nbsp;<b>Honeypot:</b> apt + IP 2</div>
+      <button class="btn" onclick="openSim('sim-term')">Abrir simulador</button>
+    </article>
+    <!-- Card 2: Servidor 3 roles -->
+    <article class="card">
+      <span class="badge" style="background:var(--red)">3 ROLES</span>
+      <h3>Servidor Ubuntu — Servidor / Atacante / Víctima</h3>
+      <p>Tres consolas independientes con login. El atacante lanza scan/exploit, la víctima recibe alertas y el servidor audita todos los logs compartidos. Incluye C2-DECT como comandos nativos.</p>
+      <div class="spec"><b>Servidor:</b> pardoserver 192.168.100.10&nbsp;&nbsp;<b>Atacante:</b> op1-endpoint .21&nbsp;&nbsp;<b>Víctima:</b> op2-endpoint .22</div>
+      <button class="btn" onclick="openSim('sim-server')">Abrir simulador</button>
+    </article>
+    <!-- Card 3: Mapa de segmentos -->
+    <article class="card">
+      <span class="badge" style="background:var(--blue)">RED</span>
+      <h3>Mapa de segmentos de red</h3>
+      <p>Estado de compromiso de los segmentos (SEGURO / ATACANTE / COMPROMETIDO) y conexiones entre nodos. Se abre también desde el simulador de servidor con "mapa segmentos".</p>
+      <div class="spec"><b>Nodos:</b> 3&nbsp;&nbsp;<b>Conexiones:</b> admin · ataque · monitoreo</div>
+      <button class="btn" onclick="openSim('sim-mapa')">Abrir mapa</button>
+    </article>
+  </div>
+
+  <section class="sim-section" id="sim-term">
+    <div class="sim-header">
+      <h2>🖥 Terminal Ubuntu → Windows</h2>
+      <button class="close-sim" onclick="closeSim('sim-term')">Cerrar</button>
+    </div>
+    <div class="sim-body">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTabTerm(this,'term')">Terminal</div>
+        <div class="tab" onclick="switchTabTerm(this,'index')">Índice de comandos (mapa)</div>
+        <div class="tab" onclick="switchTabTerm(this,'services')">Servicios tipo 2</div>
+        <div class="tab" onclick="switchTabTerm(this,'branch')">Rama de decisión</div>
+      </div>
+
+      <div class="tabpanel active" id="tp-term">
+        <div class="row-ctrl">
+          <label style="font-size:.8rem;color:var(--muted)">Variante:</label>
+          <div class="ctrl active" onclick="setVariant(this,'standard')">standard</div>
+          <div class="ctrl" onclick="setVariant(this,'apt')">apt</div>
+          <label style="font-size:.8rem;color:var(--muted)">IP:</label>
+          <div class="ctrl active" onclick="setIp(this,'192.168.100.10')">192.168.100.10</div>
+          <div class="ctrl" onclick="setIp(this,'192.168.100.20')">192.168.100.20</div>
+          <div class="ctrl" onclick="toggleHoneypot(this)">Honeypot: OFF</div>
+        </div>
+        <div class="terminal" id="term-out"></div>
+        <div class="term-input-wrap">
+          <span class="prompt">pardo@ubuntu:~$</span>
+          <input class="term-input" id="term-in" autocomplete="off" autofocus placeholder="Escribe un comando Ubuntu (mapa, servicios, branch, clear, exit)...">
+          <button class="btn-term" id="term-btn" onclick="termSend()">Ejecutar</button>
+        </div>
+        <div style="font-size:.78rem;color:var(--muted);padding:.2rem 1rem">Comandos seguros se ejecutan (simulado); los no seguros solo muestran el "servicio a hacer". Presiona Enter para enviar.</div>
+      </div>
+
+      <div class="tabpanel" id="tp-index">
+        <div class="box"><span class="label">Índice Ubuntu → Windows ("servicio a hacer")</span>
+          <table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-top:.5rem">
+            <thead><tr><th style="text-align:left">Ubuntu</th><th style="text-align:left">Windows</th><th style="text-align:left">Desc.</th><th style="text-align:left">Seguro</th><th style="text-align:left">Cat.</th></tr></thead>
+            <tbody id="idx-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tabpanel" id="tp-services">
+        <div class="box"><span class="label">Servicios tipo 2 del sistema (vista de servicio a hacer)</span>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.4rem;font-size:.82rem;margin-top:.5rem" id="svc-list"></div>
+        </div>
+      </div>
+
+      <div class="tabpanel" id="tp-branch">
+        <div class="box">
+          <span class="label">Rama de decisión (branch)</span>
+          <div style="margin-top:.6rem;font-family:monospace;font-size:.82rem;color:var(--text);white-space:pre-wrap" id="branch-flow">
+INICIO: operador escribe comando Ubuntu
+        │
+        ▼
+┌─────────────────────┐
+│ ¿Comando conocido?  ├─ No ──► "orden no encontrada" (use 'mapa')
+└──────────┬──────────┘
+           │ Sí
+           ▼
+┌─────────────────────┐
+│ ¿Variante = apt?    ├─ No ──► Rama: standard_solo_lectura
+└──────────┬──────────┘
+           │ Sí
+           ▼
+┌─────────────────────┐
+│ ¿IP = 192.168.100.20│─ No ──► Rama: IP1 (servidor C2 real)
+│  (honeypot)?        ├─ Sí ──► Rama: honeypot_cebo (IP 2)
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│ ¿Comando seguro?    ├─ No ──► Rama: solo_mostrar_servicio (no ejecuta)
+└──────────┬──────────┘
+           │ Sí
+           ▼
+     Ejecutar comando Windows equivalente
+           │
+           ▼
+     Registrar log forense (ts, IP, usuario, comando, hash SHA-256)
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sim-section" id="sim-server">
+    <div class="sim-header">
+      <h2>🖧 Servidor Ubuntu — 3 Roles</h2>
+      <button class="close-sim" onclick="closeSim('sim-server')">Cerrar</button>
+    </div>
+    <div class="sim-body">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTabServer(this,'roles')">3 Consolas</div>
+        <div class="tab" onclick="switchTabServer(this,'logs')">Logs compartidos</div>
+        <div class="tab" onclick="switchTabServer(this,'c2')">Comandos C2-DECT</div>
+        <div class="tab" onclick="switchTabServer(this,'index')">Índice Ubuntu → Win</div>
+      </div>
+
+      <div class="tabpanel active" id="sp-roles">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.6rem">Inicia sesión en cada consola. Credenciales por defecto: Servidor admin/luis · Atacante operador1/op123 · Víctima operador2/op123</div>
+        <div class="roles-grid">
+          <!-- Servidor -->
+          <div class="role-card">
+            <header>
+              <span class="dot" style="background:var(--green);width:8px;height:8px;border-radius:50%;display:inline-block"></span>
+              <span class="role-name role-server">SERVIDOR</span>
+              <span style="margin-left:auto;font-size:.75rem;color:var(--muted)">pardoserver</span>
+            </header>
+            <div class="cred">Login: admin / luis &nbsp;|&nbsp; IP: 192.168.100.10</div>
+            <div class="term" id="term-server"></div>
+            <div class="input-wrap">
+              <input class="term-input" id="in-server" autocomplete="off" placeholder="admin@pardoserver:~$ ...">
+              <button class="btn-send" onclick="srvSend('server')">Enviar</button>
+            </div>
+            <div class="hint">Comandos: ver logs, servicios, c2, mapa segmentos, clear, exit. Ver TODOS los logs.</div>
+          </div>
+          <!-- Atacante -->
+          <div class="role-card">
+            <header>
+              <span class="dot" style="background:var(--red);width:8px;height:8px;border-radius:50%;display:inline-block"></span>
+              <span class="role-name role-atk">ATACANTE (Operador 1)</span>
+              <span style="margin-left:auto;font-size:.75rem;color:var(--muted)">op1-endpoint</span>
+            </header>
+            <div class="cred">Login: operador1 / op123 &nbsp;|&nbsp; IP: 192.168.100.21</div>
+            <div class="term" id="term-atk"></div>
+            <div class="input-wrap">
+              <input class="term-input" id="in-atk" autocomplete="off" placeholder="operador1@op1-endpoint:~$ ...">
+              <button class="btn-send" onclick="srvSend('atk')">Enviar</button>
+            </div>
+            <div class="hint">Comandos: scan &lt;ip&gt;, exploit &lt;ip&gt;, ping, servicios, clear, exit. Puede atacar a la víctima.</div>
+          </div>
+          <!-- Víctima -->
+          <div class="role-card">
+            <header>
+              <span class="dot" style="background:var(--yellow);width:8px;height:8px;border-radius:50%;display:inline-block"></span>
+              <span class="role-name role-vic">VÍCTIMA (Operador 2)</span>
+              <span style="margin-left:auto;font-size:.75rem;color:var(--muted)">op2-endpoint</span>
+            </header>
+            <div class="cred">Login: operador2 / op123 &nbsp;|&nbsp; IP: 192.168.100.22</div>
+            <div class="term" id="term-vic"></div>
+            <div class="input-wrap">
+              <input class="term-input" id="in-vic" autocomplete="off" placeholder="operador2@op2-endpoint:~$ ...">
+              <button class="btn-send" onclick="srvSend('vic')">Enviar</button>
+            </div>
+            <div class="hint">Comandos: alertas, servicios, clear, exit. Ve ataques recibidos.</div>
+          </div>
+        </div>
+        <div style="margin-top:.8rem;display:flex;gap:.6rem;flex-wrap:wrap">
+          <button class="btn-term" onclick="srvDemo('scan')">Demo: scan 192.168.100.22 (atacante)</button>
+          <button class="btn-term" onclick="srvDemo('exploit')">Demo: exploit 192.168.100.22 (atacante)</button>
+          <button class="btn-term" onclick="srvDemo('logs')">Demo: ver logs (servidor)</button>
+          <button class="btn-term" onclick="srvReset()">Reiniciar escenario</button>
+        </div>
+      </div>
+
+      <div class="tabpanel" id="sp-logs">
+        <div class="box"><span class="label">Logs compartidos (logs/shared_logs.jsonl) — auditoría central</span>
+          <table class="logs-table" id="log-table">
+            <thead><tr><th>TS</th><th>Origen</th><th>Destino</th><th>Tipo</th><th>Contenido</th><th>Hash</th></tr></thead>
+            <tbody id="log-body"></tbody>
+          </table>
+          <div style="margin-top:.6rem;display:flex;gap:.6rem">
+            <button class="btn-term" onclick="srvRefreshLogs()">Refrescar logs</button>
+            <button class="btn-term" onclick="srvClearLogs()">Limpiar logs</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabpanel" id="sp-c2">
+        <div class="box"><span class="label">Comandos C2-DECT integrados como nativos del SO</span>
+          <table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-top:.5rem">
+            <thead><tr><th style="text-align:left">Comando</th><th style="text-align:left">Efecto</th><th style="text-align:left">Seguro</th></tr></thead>
+            <tbody id="c2-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tabpanel" id="sp-index">
+        <div class="box"><span class="label">Índice de comandos Ubuntu → Windows (seleccionado)</span>
+          <table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-top:.5rem">
+            <thead><tr><th style="text-align:left">Ubuntu</th><th style="text-align:left">Windows</th><th style="text-align:left">Desc.</th><th style="text-align:left">Seguro</th></tr></thead>
+            <tbody id="srv-idx-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sim-section" id="sim-mapa">
+    <div class="sim-header">
+      <h2>🗺 Mapa de segmentos de red</h2>
+      <button class="close-sim" onclick="closeSim('sim-mapa')">Cerrar</button>
+    </div>
+    <div class="sim-body">
+      <div class="mapa-wrap">
+        <svg class="mapa-svg" viewBox="0 0 700 320" preserveAspectRatio="xMidYMid meet" id="mapa-svg">
+          <defs>
+            <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+            </marker>
+          </defs>
+          <!-- conexiones -->
+          <line x1="160" y1="160" x2="320" y2="120" class="conn" style="stroke:#3498db;stroke-width:2;marker-end:url(#arr)"/>
+          <line x1="320" y1="120" x2="480" y2="200" class="conn atk" style="stroke:#e74c3c;stroke-width:2;stroke-dasharray:6 4;marker-end:url(#arr)"/>
+          <line x1="480" y1="200" x2="160" y2="160" class="conn" style="stroke:#00d2ff;stroke-width:2;marker-end:url(#arr)"/>
+          <!-- nodos -->
+          <g class="node" id="n-srv" transform="translate(130,140)" data-ip="192.168.100.10" data-nombre="pardoserver" data-rol="servidor" data-comp="false">
+            <circle cx="30" cy="30" r="26" fill="#0a0b12" stroke="#2ecc71" stroke-width="3"/>
+            <text x="30" y="34" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11">🖥</text>
+          </g>
+          <g class="node" id="n-atk" transform="translate(290,100)" data-ip="192.168.100.21" data-nombre="op1-endpoint" data-rol="atacante" data-comp="false">
+            <circle cx="30" cy="30" r="24" fill="#0a0b12" stroke="#f1c40f" stroke-width="3"/>
+            <text x="30" y="34" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11">💻</text>
+          </g>
+          <g class="node" id="n-vic" transform="translate(450,180)" data-ip="192.168.100.22" data-nombre="op2-endpoint" data-rol="víctima" data-comp="false">
+            <circle cx="30" cy="30" r="24" fill="#0a0b12" stroke="#3498db" stroke-width="3"/>
+            <text x="30" y="34" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11">💻</text>
+          </g>
+        </svg>
+        <div class="mapa-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#2ecc71;box-shadow:0 0 6px #2ecc71"></div> Servidor SEGURO</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#f1c40f"></div> Atacante</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#e74c3c;box-shadow:0 0 8px #e74c3c"></div> Comprometido</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#3498db"></div> Víctima</div>
+        </div>
+        <div class="mapa-info" id="mapa-info">Estado inicial: sin segmentos comprometidos.</div>
+      </div>
+      <div style="margin-top:1rem">
+        <table class="logs-table" style="margin-top:.5rem">
+          <thead><tr><th style="text-align:left">Segmento</th><th style="text-align:left">IP</th><th style="text-align:left">Rol</th><th style="text-align:left">Estado</th><th style="text-align:left">Servicios</th></tr></thead>
+          <tbody id="mapa-tabla"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:.8rem;display:flex;gap:.6rem">
+        <button class="btn-term" onclick="mapaComprometer('192.168.100.22')">Simular exploit → comprometer víctima</button>
+        <button class="btn-term" onclick="mapaReset()">Restaurar estado inicial</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Simuladores web de la carpeta <code>linux ubuntu service</code> · Proyecto C2-DECT v3.6.1 · 
+  <span style="color:var(--muted)">Uso exclusivo para testing de seguridad autorizado, laboratorios de Red Team y detección con alcance declarado. No operar contra activos de terceros sin autorización escrita vigente.</span>
+</footer>
+
+<script>
+/* ========================= ESTADO GLOBAL ========================= */
+const TERM_CMD = {
+  // comando: {win, desc, seguro, cat}
+  pwd:{win:'cd',desc:'Ruta de trabajo actual',seguro:true,cat:'sistema'},
+  ls:{win:'dir',desc:'Listar contenido del directorio',seguro:true,cat:'archivos'},
+  'ls -l':{win:'dir /q',desc:'Listar con detalles',seguro:true,cat:'archivos'},
+  'ls -a':{win:'dir /a',desc:'Incluir archivos ocultos',seguro:true,cat:'archivos'},
+  whoami:{win:'whoami',desc:'Usuario actual',seguro:true,cat:'sistema'},
+  hostname:{win:'hostname',desc:'Nombre del equipo',seguro:true,cat:'red'},
+  'uname -a':{win:'systeminfo | findstr ...',desc:'Info del sistema y kernel',seguro:true,cat:'sistema'},
+  ver:{win:'ver',desc:'Versión del sistema operativo Windows',seguro:true,cat:'sistema'},
+  date:{win:'date /t',desc:'Fecha actual',seguro:true,cat:'sistema'},
+  time:{win:'time /t',desc:'Hora actual',seguro:true,cat:'sistema'},
+  clear:{win:'cls',desc:'Limpiar pantalla',seguro:true,cat:'consola'},
+  cat:{win:'type',desc:'Mostrar contenido de un archivo',seguro:true,cat:'archivos'},
+  type:{win:'type',desc:'Mostrar contenido (alias Windows)',seguro:true,cat:'archivos'},
+  grep:{win:'findstr',desc:'Buscar texto dentro de archivos',seguro:true,cat:'archivos'},
+  find:{win:'dir /s /b',desc:'Buscar archivos en el árbol',seguro:true,cat:'archivos'},
+  ps:{win:'tasklist',desc:'Listar procesos',seguro:true,cat:'procesos'},
+  top:{win:'tasklist',desc:'Monitor de procesos (Windows)',seguro:true,cat:'procesos'},
+  tasklist:{win:'tasklist',desc:'Listar procesos (nativo Windows)',seguro:true,cat:'procesos'},
+  'df -h':{win:'wmic logicaldisk get caption,size,freespace',desc:'Espacio en disco por unidad',seguro:true,cat:'almacenamiento'},
+  df:{win:'wmic logicaldisk get caption,size,freespace',desc:'Espacio disponible',seguro:true,cat:'almacenamiento'},
+  'free -h':{win:'wmic OS get TotalVisibleMemorySize,FreePhysicalMemory',desc:'Memoria RAM total y disponible',seguro:true,cat:'memoria'},
+  free:{win:'wmic OS get TotalVisibleMemorySize,FreePhysicalMemory',desc:'Información de memoria',seguro:true,cat:'memoria'},
+  ping:{win:'ping',desc:'Verificar conectividad de red',seguro:true,cat:'red'},
+  ifconfig:{win:'ipconfig /all',desc:'Configuración de interfaces de red',seguro:true,cat:'red'},
+  ipconfig:{win:'ipconfig /all',desc:'Configuración de red (nativo Windows)',seguro:true,cat:'red'},
+  netstat:{win:'netstat -ano',desc:'Conexiones de red activas y puertos',seguro:true,cat:'red'},
+  curl:{win:'curl',desc:'Transferir datos desde/a un servidor',seguro:true,cat:'red'},
+  echo:{win:'echo',desc:'Imprimir texto en pantalla',seguro:true,cat:'consola'},
+  history:{win:'doskey /history',desc:'Historial de comandos',seguro:true,cat:'consola'},
+  man:{win:'help',desc:'Manual de ayuda',seguro:true,cat:'consola'},
+  help:{win:'help',desc:'Ayuda de comandos de Windows',seguro:true,cat:'consola'},
+  'cd ..':{win:'cd ..',desc:'Subir un nivel de directorio',seguro:true,cat:'navegación'},
+  'cd /':{win:'cd \\',desc:'Ir a la raíz del volumen',seguro:true,cat:'navegación'},
+  'cd ~':{win:'cd %USERPROFILE%',desc:'Ir al directorio personal',seguro:true,cat:'navegación'},
+  cp:{win:'copy',desc:'Copiar archivo o directorio',seguro:false,cat:'archivos'},
+  mv:{win:'move',desc:'Mover o renombrar archivo',seguro:false,cat:'archivos'},
+  rm:{win:'del',desc:'Eliminar un archivo',seguro:false,cat:'archivos'},
+  'rm -rf':{win:'rd /s /q',desc:'Eliminar directorio recursivamente',seguro:false,cat:'archivos'},
+  mkdir:{win:'md',desc:'Crear directorio nuevo',seguro:false,cat:'archivos'},
+  md:{win:'md',desc:'Crear directorio (alias Windows)',seguro:false,cat:'archivos'},
+  rmdir:{win:'rd',desc:'Eliminar directorio vacío',seguro:false,cat:'archivos'},
+  touch:{win:'type nul >>',desc:'Crear archivo vacío',seguro:false,cat:'archivos'},
+  wget:{win:'curl -L -o',desc:'Descargar archivo de la web',seguro:false,cat:'red'},
+  'apt-get':{win:'winget install',desc:'Instalar paquete de software',seguro:false,cat:'paquetes'},
+  apt:{win:'winget',desc:'Gestor de paquetes (winget)',seguro:false,cat:'paquetes'},
+  sudo:{win:'runas /user:Administrador',desc:'Ejecutar como administrador',seguro:false,cat:'sistema'},
+  exit:{win:'exit',desc:'Salir del simulador',seguro:true,cat:'consola'},
+  quit:{win:'exit',desc:'Salir del simulador',seguro:true,cat:'consola'}
+};
+const TIPO2_SERVICIOS = {
+  red:'ipconfig /all',discos:'wmic logicaldisk get caption,size,freespace',
+  memoria:'wmic OS get TotalVisibleMemorySize,FreePhysicalMemory',procesos:'tasklist',
+  servicios:'sc query type= service state= all',usuarios:'net user',grupos:'net localgroup',
+  hotfixes:'wmic qfe list',arranque:'wmic startup list brief',firewall:'netsh advfirewall show allprofiles'
+};
+
+let termVariant='standard', termIp='192.168.100.10', termHoneypot=false;
+const SERVER_IPS = ['192.168.100.10','192.168.100.21','192.168.100.22'];
+const SERVER_NAMES = {'192.168.100.10':'pardoserver','192.168.100.21':'op1-endpoint','192.168.100.22':'op2-endpoint'};
+
+/* ========================= NAVEGACIÓN SIMULADORES ========================= */
+function openSim(id){
+  document.querySelectorAll('.sim-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById(id).scrollIntoView({behavior:'smooth'});
+  if(id==='sim-mapa') mapaRender();
+}
+function closeSim(id){document.getElementById(id).classList.remove('active');}
+function closeAllSims(){document.querySelectorAll('.sim-section').forEach(s=>s.classList.remove('active'));}
+function switchTabTerm(btn,panel){
+  document.querySelectorAll('#sim-term .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#sim-term .tabpanel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tp-'+panel).classList.add('active');
+  if(panel==='index') renderIdx();
+  if(panel==='services') renderServices();
+}
+function switchTabServer(btn,panel){
+  document.querySelectorAll('#sim-server .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#sim-server .tabpanel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('sp-'+panel).classList.add('active');
+  if(panel==='c2') renderC2();
+  if(panel==='index') renderSrvIdx();
+  if(panel==='logs') srvRefreshLogs();
+}
+
+/* ========================= SIMULADOR TERMINAL ========================= */
+const termOut=document.getElementById('term-out');
+const termIn=document.getElementById('term-in');
+const termBtn=document.getElementById('term-btn');
+
+function termLog(html,cls=''){
+  const d=document.createElement('div');d.className='term-line'+(cls?' '+cls:'');
+  d.innerHTML='<span class="prompt">'+(cls?'out':'>')+'</span><span class="content'+(cls?' '+cls:'')+'">'+html+'</span>';
+  termOut.appendChild(d);termOut.scrollTop=termOut.scrollHeight;
+}
+function termPrompt(){
+  const d=document.createElement('div');d.className='term-line';
+  d.innerHTML='<span class="prompt">pardo@ubuntu:~$</span><span class="content">_</span>';
+  termOut.appendChild(d);termOut.scrollTop=termOut.scrollHeight;
+}
+function termClear(){termOut.innerHTML='';termLog('<span class="ok">Terminal Ubuntu 22.04.3 LTS (simulado)</span><br><span class="dim">Variante: <b>'+termVariant+'</b> · IP: <b>'+termIp+'</b> · '+ (termHoneypot?'<span class="warn">HONEYPOT ACTIVO</span>':'')+'</span><br><span class="dim">Escribe <kbd>mapa</kbd>, <kbd>servicios</kbd>, <kbd>branch</kbd>, <kbd>clear</kbd> o <kbd>exit</kbd>.</span>');termPrompt();}
+
+function setVariant(el,v){termVariant=v;[...document.querySelectorAll('#sim-term .ctrl')].forEach(c=>c.classList.remove('active'));el.classList.add('active');termLog('<span class="dim">Variante cambiada a: '+v+'</span>');termPrompt();}
+function setIp(el,ip){termIp=ip;[...document.querySelectorAll('#sim-term .ctrl')].forEach(c=>c.classList.remove('active'));el.classList.add('active');termLog('<span class="dim">IP cambiada a: '+ip+'</span>');termPrompt();}
+function toggleHoneypot(el){termHoneypot=!termHoneypot;el.textContent='Honeypot: '+(termHoneypot?'ON':'OFF');el.classList.toggle('active',termHoneypot);termLog('<span class="dim">Modo honeypot '+(termHoneypot?'ACTIVADO':'DESACTIVADO')+'</span>');termPrompt();}
+
+function ramaDecision(cmd,seguro){
+  if(!(cmd in TERM_CMD) && cmd!=='mapa' && cmd!=='servicios' && cmd!=='branch' && cmd!=='clear' && cmd!=='exit' && cmd!=='quit') return 'no_encontrado';
+  if(termVariant==='standard') return 'standard_solo_lectura';
+  if(termIp==='192.168.100.20') return 'honeypot_cebo';
+  if(!seguro) return 'solo_mostrar_servicio';
+  return 'ejecutar_real';
+}
+function descRama(r){const m={'no_encontrado':'Comando no reconocido','standard_solo_lectura':'Variante standard: solo comandos de lectura','honeypot_cebo':'Modo honeypot (IP 2): captura sin ejecutar','solo_mostrar_servicio':'Comando destructivo: solo se muestra el servicio a hacer','ejecutar_real':'Comando seguro: se ejecuta el equivalente de Windows'};return m[r]||'Rama desconocida';}
+
+function mostrarServicio(cmd,win,desc,args,rama){
+  termLog('<div class="box service-box"><span class="label">SERVICIO A HACER</span>'+
+    'Comando Ubuntu : <span class="cmd">'+cmd+'</span> '+(args?'<span class="dim">'+args+'</span>':'')+'<br>'+
+    'Acción         : <span class="dim">'+desc+'</span><br>'+
+    'Rama (branch)  : <span class="magenta">'+rama+'</span> — '+descRama(rama)+'<br>'+
+    'Ejecutar en Win: <span class="info">'+win+'</span> '+(args?'<span class="dim">'+args+'</span>':'')+'</div>');
+}
+function termWinSalida(win,args){
+  const simulados={
+    'cd':`${termIp.replace(/\./g,' ')} > usuario@DESKTOP`,
+    'dir':` Volumen en la unidad C no tiene etiqueta.<br> Número de serie del volumen: 4A2B-3C1D<br><br>    17/11/2026  18:10    &lt;DIR&gt;          .<br>    17/11/2026  18:10    &lt;DIR&gt;          ..<br>    17/11/2026  18:05    &lt;DIR&gt;          logs<`,
+    'whoami':'pardo\\usuario',
+    'hostname':'DESKTOP-UBUNTUSIM',
+    'ver':'Microsoft Windows [Versión 10.0.19045.5000] (simulado)',
+    'date':'17/11/2026',
+    'time':'18:10:45.23',
+    'tasklist':'Nombre de la imagen           PID Sesión     Uso de memoria<br>========================= ====== =============== ============<br> explorer.exe                1234 Consola      15.234 K<br> winlogon.exe               567  Servicios      8.102 K`,
+    'ping':'Haciendo ping a 192.168.100.10 con 32 bytes de datos:<br> Respuesta desde 192.168.100.10: bytes=32 tiempo=1ms TTL=64<br> Respuesta desde 192.168.100.10: bytes=32 tiempo=1ms TTL=64',
+    'ipconfig':'Configuración IP de Windows<br><br>   Adaptador de Ethernet Ethernet:<br>      Dirección IPv4: . . . . . . . . . : '+termIp+'<br>      Máscara de subred . . . . . . . . : 255.255.255.0',
+    'netstat':'Conexiones activas<br><br>  Proto  Dirección local         Dirección remota       Estado<br>  TCP    0.0.0.0:80              0.0.0.0:0              ESCUCHAR',
+    'curl':'<html><head><title>Ejemplo</title></head><body>Página simulada de C2-DECT</body></html>',
+    'echo':args||'',
+    'help':'Lista de comandos admitidos (simulado): dir, copy, del, type, ping, ipconfig, netstat, tasklist...'
+  };
+  const key=win.split(' ')[0];
+  return simulados[key]||'Salida simulada del comando: '+win+(args?' '+args:'');
+}
+
+function termProcesar(linea){
+  linea=linea.trim();if(!linea)return;
+  const partes=linea.split(/\s+/,1);const cmd=partes[0].toLowerCase();const args=linea.slice(cmd.length).trim();
+  // especiales
+  if(cmd==='mapa'){renderIdx();termPrompt();return;}
+  if(cmd==='servicios'){renderServices();termPrompt();return;}
+  if(cmd==='branch'){termLog('<span class="dim">Variante: '+termVariant+' · IP: '+termIp+' · Honeypot: '+(termHoneypot?'ACTIVO':'INACTIVO')+'</span>');termPrompt();return;}
+  if(cmd==='clear'){termClear();return;}
+  if(cmd==='exit'||cmd==='quit'){termLog('<span class="warn">Saliendo del simulador Ubuntu...</span>');termPrompt();return;}
+  // buscar
+  let ent=null,cmdMatch=cmd;
+  if(TERM_CMD[cmd])ent=TERM_CMD[cmd];
+  else{for(const [n,i] of Object.entries(TERM_CMD)){if(linea.toLowerCase().startsWith(n+' ')||linea.toLowerCase()==n){ent=i;cmdMatch=n;args=linea.slice(n.length).trim();break;}}}
+  if(!ent){termLog('<span class="error">bash: '+cmd+': orden no encontrada (use \'mapa\' para ver comandos)</span>');termPrompt();return;}
+  const rama=ramaDecision(cmdMatch,ent.seguro);
+  mostrarServicio(cmdMatch,ent.win||'—',ent.desc,args,rama);
+  let salida='';
+  if(rama!=='no_encontrado'){
+    if(rama==='standard_solo_lectura'||rama==='honeypot_cebo'||rama==='solo_mostrar_servicio'){
+      if(!ent.seguro)termLog('<span class="warn">[simulador] Comando no destructivo simulado: no se ejecutó realmente en Windows.</span>');
+      else{salida=termWinSalida(ent.win,args);if(salida)termLog(salida);termLog('');}
+    }else if(rama==='ejecutar_real'){salida=termWinSalida(ent.win,args);if(salida)termLog(salida);termLog('');}
+  }
+  if(cmdMatch==='cd'&&args){/* navegación simulada */ }
+  termPrompt();
+}
+function termSend(){const v=termIn.value.trim();termIn.value='';if(!v)return;termLog('<span class="content cmd">'+escapeHtml(v)+'</span>');termProcesar(v);}
+termIn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();termSend();}});
+termBtn.addEventListener('click',termSend);
+
+function renderIdx(){
+  const tb=document.getElementById('idx-body');tb.innerHTML='';
+  for(const [c,i] of Object.entries(TERM_CMD)){
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td class="cmd">'+c+'</td><td class="dim">'+(i.win||'—')+'</td><td class="dim">'+i.desc+'</td><td>'+(i.seguro?'<span class="ok">SÍ</span>':'<span class="error">NO</span>')+'</td><td class="dim">'+i.cat+'</td>';
+    tb.appendChild(tr);
+  }
+}
+function renderServices(){
+  const el=document.getElementById('svc-list');el.innerHTML='';
+  for(const [k,v] of Object.entries(TIPO2_SERVICIOS)){
+    const d=document.createElement('div');d.className='box';d.innerHTML='<span class="label">'+k+'</span><span class="dim">→ '+v+'</span>';el.appendChild(d);
+  }
+}
+
+/* ========================= SIMULADOR SERVIDOR 3 ROLES ========================= */
+const srvState={
+  logged:{server:false,atk:false,vic:false},
+  user:{server:'',atk:'',vic:''},
+  logs:[
+    {ts:'2026-11-17T18:10:46Z',origen_rol:'operator1',origen_host:'op1-endpoint',origen_ip:'192.168.100.21',destino:'192.168.100.22',tipo:'ataque',contenido:'scan 192.168.100.22 - escaneo de puertos simulado',hash:'a3f1b2c4'},
+    {ts:'2026-11-17T18:10:48Z',origen_rol:'operator1',origen_host:'op1-endpoint',origen_ip:'192.168.100.21',destino:'192.168.100.22',tipo:'ataque',contenido:'exploit 192.168.100.22 - explotación simulada',hash:'d8e9f0a1'},
+    {ts:'2026-11-17T18:11:00Z',origen_rol:'server',origen_host:'pardoserver',origen_ip:'192.168.100.10',destino:'sistema',tipo:'sistema',contenido:'Sesión iniciada',hash:'11223344'}
+  ],
+  compromiso:{'192.168.100.22':true},
+  servicios:{ssh:true,apache2:true,smbd:true}
+};
+function srvNow(){return new Date().toISOString().replace(/\.\d+Z/,'Z');}
+function srvHash(o){let h=0;for(let i=0;i<o.length;i++){h=((h<<5)-h)+o.charCodeAt(i);h|=0}return Math.abs(h).toString(16).slice(0,8);}
+function srvAddLog(rol,host,ip,destino,tipo,contenido){
+  const e={ts:srvNow(),origen_rol:rol,origen_host:host,origen_ip:ip,destino,destino,tipo,contenido,hash:srvHash(JSON.stringify({ts:srvNow(),rol,contenido}))};
+  srvState.logs.unshift(e);srvRenderLogs();return e;
+}
+function srvTerm(el,html,cls=''){
+  const d=document.createElement('div');d.className='term-line'+(cls?' '+cls:'');
+  d.innerHTML='<span class="prompt out">></span><span class="content'+(cls?' '+cls:'')+'">'+html+'</span>';
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function srvLogin(role){
+  const inputs={server:document.getElementById('in-server'),atk:document.getElementById('in-atk'),vic:document.getElementById('in-vic')};
+  const terms={server:document.getElementById('term-server'),atk:document.getElementById('term-atk'),vic:document.getElementById('term-vic')};
+  const creds={server:{u:'admin',p:'luis',h:'pardoserver',ip:'192.168.100.10',nom:'Servidor'},atk:{u:'operador1',p:'op123',h:'op1-endpoint',ip:'192.168.100.21',nom:'Atacante'},vic:{u:'operador2',p:'op123',h:'op2-endpoint',ip:'192.168.100.22',nom:'Víctima'}};
+  const c=creds[role];const line=inputs[role].value;const parts=line.split(/\s+/);const u=parts[0],p=parts[1]||'';
+  const t=terms[role];t.innerHTML='';
+  if(u===c.u&&p===c.p){
+    srvState.logged[role]=true;srvState.user[role]=u;
+    srvTerm(t,'<span class="ok">Acceso concedido. Bienvenido, '+u+'.</span>');
+    srvAddLog(c.nom.toLowerCase(),c.h,c.ip,'sistema','sistema','Sesión iniciada');
+    srvTerm(t,'<span class="dim">Rol: '+c.nom+' | IP: '+c.ip+' | Escribe \'ver logs\', \'servicios\', \'c2\', \'mapa segmentos\', \'clear\', \'exit\'.</span>');
+    if(role==='atk')srvTerm(t,'<span class="warn">PERFIL: CLIENTE ATACANTE (puede lanzar scan, exploit)</span>');
+    if(role==='vic')srvTerm(t,'<span class="warn">PERFIL: VÍCTIMA (recibe ataques y registra alertas)</span>');
+    if(role==='server')srvTerm(t,'<span class="ok">PERFIL: SERVIDOR CENTRAL (ve logs de atacante y víctima)</span>');
+  }else{srvTerm(t,'<span class="error">Login incorrecto. Acceso denegado.</span>', 'error');}
+  inputs[role].value='';
+}
+function srvSend(role){const el=document.getElementById('in-'+role);if(!el.value.trim())return;srvProcesar(role,el.value.trim());el.value='';}
+['in-server','in-atk','in-vic'].forEach(id=>{document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const r=id.replace('in-','');srvSend(r);}}}););
+
+function srvProcesar(role,linea){
+  const terms={server:document.getElementById('term-server'),atk:document.getElementById('term-atk'),vic:document.getElementById('term-vic')};
+  const t=terms[role];const creds={server:{u:'admin',h:'pardoserver',ip:'192.168.100.10',rol:'server',nom:'Servidor'},atk:{u:'operador1',h:'op1-endpoint',ip:'192.168.100.21',rol:'operator1',nom:'Atacante'},vic:{u:'operador2',h:'op2-endpoint',ip:'192.168.100.22',rol:'operator2',nom:'Víctima'}};
+  const c=creds[role];
+  if(!srvState.logged[role]){srvTerm(t,'<span class="error">Sesión no iniciada. Inicie sesión: <kbd>usuario password</kbd></span>');return;}
+  const parts=linea.split(/\s+/);const cmd=parts[0].toLowerCase();const args=linea.slice(cmd.length).trim();
+  srvTerm(t,'<span class="content cmd">'+c.u+'@'+c.h+':~$ '+escapeHtml(linea)+'</span>');
+  if(cmd==='clear'){t.innerHTML='';srvAddLog(c.rol,c.h,c.ip,'sistema','sistema','Pantalla limpiada');return;}
+  if(cmd==='exit'||cmd==='quit'){srvTerm(t,'<span class="warn">Cerrando sesión en '+c.h+'...</span>');srvState.logged[role]=false;return;}
+  if(cmd==='servicios'||cmd==='status'){
+    srvTerm(t,'<div class="box"><span class="label">SERVICIOS DEL SERVIDOR</span>'+
+      Object.entries(srvState.servicios).map(([n,i])=>n+' : '+(i?'<span class="ok">activo (running)</span>':'<span class="error">inactivo (dead)</span>')+' │ puerto '+{ssh:22,apache2:80,smbd:445}[n]).join('<br>')+'</div>');
+    srvAddLog(c.rol,c.h,c.ip,'sistema','comando','servicios');return;
+  }
+  if(cmd==='c2'){
+    srvTerm(t,'<div class="box"><span class="label">COMANDOS C2-DECT NATIVOS</span>'+
+      ['c2-server: Iniciar servidor C2-DECT','build-standard-server: Compilar servidor Standard','build-apt-server: Compilar servidor APT','c2-status: Configuración C2-DECT','installer: Instalador C2-DECT'].map(x=>'<span class="dim">• '+x+'</span>').join('<br>')+'</div>');
+    srvAddLog(c.rol,c.h,c.ip,'sistema','comando_c2','c2');return;
+  }
+  if(cmd==='ver logs'||cmd==='logs'){
+    const filtro=role==='server'?null:c.rol;
+    const logs=srvState.logs.filter(l=>filtro===null||l.origen_rol===filtro||l.destino===c.ip);
+    let html='<div class="box"><span class="label">LOG DE ACTIVIDAD</span><table style="width:100%;font-size:.78rem;border-collapse:collapse"><thead><tr><th style="text-align:left">TS</th><th style="text-align:left">Origen</th><th style="text-align:left">Destino</th><th style="text-align:left">Tipo</th><th style="text-align:left">Contenido</th></tr></thead><tbody>';
+    logs.slice(0,20).forEach(e=>{html+='<tr><td class="dim">'+e.ts+'</td><td class="magenta">'+e.origen_rol+'('+e.origen_host+')</td><td class="cyan">'+e.destino+'</td><td class="'+(e.tipo==='ataque'?'error':e.tipo==='alerta'?'warn':e.tipo==='sistema'?'ok':'info')+'">'+e.tipo+'</td><td>'+escapeHtml(e.contenido)+'</td></tr>'});
+    html+='</tbody></table></div>';
+    srvTerm(t,html);srvAddLog(c.rol,c.h,c.ip,'sistema','comando','ver logs');return;
+  }
+  if(cmd==='mapa segmentos'||cmd==='mapa red'){openSim('sim-mapa');srvAddLog(c.rol,c.h,c.ip,'sistema','comando','mapa segmentos');return;}
+  // ataque solo atacante
+  if(role==='atk'&&(cmd==='scan'||cmd==='exploit')){
+    const obj=args||'192.168.100.22';
+    srvAddLog(c.rol,c.h,c.ip,obj,'ataque',cmd+' '+obj+' - '+ (cmd==='scan'?'escaneo de puertos simulado':'explotación simulada'));
+    if(cmd==='scan'){
+      srvTerm(t,'<span class="error">[ATAQUE] Escaneando '+obj+'...</span><br>Puerto 22 (ssh): abierto<br>Puerto 80 (http): abierto<br>Puerto 445 (smbd): abierto<br><span class="warn">[simulador] Escaneo completado contra '+obj+'</span>');
+    }else{
+      srvTerm(t,'<span class="error">[ATAQUE] Ejecutando exploit contra '+obj+'...</span><br>CVE-2023-XXXX: intento de desbordamiento de búfer en smbd<br>Resultado: ACCESO OBTENIDO (simulado)<br><span class="warn">[simulador] Explotación completada contra '+obj+'</span>');
+      srvState.compromiso[obj]=true;srvAddLog(c.rol,c.h,c.ip,obj,'alerta','Víctima '+obj+' comprometida por '+c.rol);mapaRender();
+    }
+    return;
+  }
+  if(role==='vic'&&cmd==='alertas'){
+    const logs=srvState.logs.filter(l=>l.destino===c.ip||l.origen_ip===c.ip);
+    let html='<div class="box"><span class="label">ALERTAS RECIBIDAS</span>';
+    if(!logs.length)html+='<span class="dim">No hay alertas.</span>';
+    else{html+='<table style="width:100%;font-size:.78rem;border-collapse:collapse"><tbody>';logs.slice(0,20).forEach(e=>{html+='<tr><td class="dim">'+e.ts+'</td><td class="error">'+e.origen_rol+' → '+e.destino+'</td><td>'+escapeHtml(e.contenido)+'</td></tr>'});html+='</tbody></table>';}
+    html+='</div>';srvTerm(t,html);return;
+  }
+  // comandos índice Ubuntu (seguros, simulación)
+  const idx={hostnamectl:'Static hostname: '+c.h+'\nOperating System: Ubuntu 22.04.3 LTS\nKernel: Linux 5.15.0-101-generic\nArchitecture: x86-64',hostname:c.h,'whoami':c.u,date:new Date().toLocaleDateString(),clear:''};
+  if(idx[cmd]!==undefined){srvTerm(t,idx[cmd].replace(/\n/g,'<br>'));srvAddLog(c.rol,c.h,c.ip,'sistema','comando',cmd);return;}
+  if(cmd==='systemctl'||cmd==='service'){
+    const tok=args.split();const sv=tok[tok.length-1]||'';
+    if(srvState.servicios[sv]!==undefined){
+      srvTerm(t,srvState.servicios[sv]?'<span class="ok">● '+sv+'.service - activo (running)</span>':'<span class="error">● '+sv+'.service - inactivo (dead)</span>');
+    }else srvTerm(t,'<span class="error">Unit '+sv+'.service could not be found.</span>');
+    srvAddLog(c.rol,c.h,c.ip,'sistema','comando',linea);return;
+  }
+  srvTerm(t,'<span class="error">bash: '+cmd+': orden no encontrada (use \'ver logs\', \'servicios\', \'c2\', \'mapa segmentos\', \'scan\', \'exploit\')</span>');
+}
+function srvDemo(action){
+  if(action==='scan'){srvState.logged.atk=true;srvProcesar('atk','scan 192.168.100.22');}
+  else if(action==='exploit'){srvState.logged.atk=true;srvProcesar('atk','exploit 192.168.100.22');mapaRender();}
+  else if(action==='logs'){srvState.logged.server=true;srvProcesar('server','ver logs');}
+}
+function srvReset(){
+  srvState.logged={server:false,atk:false,vic:false};srvState.compromiso={'192.168.100.22':false};
+  document.getElementById('term-server').innerHTML='';document.getElementById('term-atk').innerHTML='';document.getElementById('term-vic').innerHTML='';
+  srvState.logs=[];
+  mapaRender();srvRefreshLogs();
+}
+function srvRefreshLogs(){
+  const tb=document.getElementById('log-body');tb.innerHTML='';
+  srvState.logs.slice(0,50).forEach(e=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td class="dim">'+e.ts+'</td><td class="magenta">'+e.origen_rol+'('+e.origen_host+')</td><td class="cyan">'+e.destino+'</td><td class="'+(e.tipo==='ataque'?'tipo-ataque':e.tipo==='alerta'?'tipo-alerta':e.tipo==='sistema'?'tipo-sistema':'tipo-comando')+' badge-t">'+e.tipo+'</td><td>'+escapeHtml(e.contenido)+'</td><td class="dim">'+e.hash+'</td>';
+    tb.appendChild(tr);
+  });
+}
+function srvClearLogs(){srvState.logs=[];srvRefreshLogs();}
+function renderC2(){
+  const tb=document.getElementById('c2-body');tb.innerHTML='';
+  const c2=[['c2-server','Iniciar c2-server.exe (ventana separada)','No'],['build-standard-server','Compilar servidor Standard (PowerShell)','No'],['build-apt-server','Compilar servidor APT (PowerShell)','No'],['build-standard-agent','Compilar agente Standard','No'],['build-standard-client','Compilar cliente GUI Standard','No'],['build-apt-agent','Compilar agente APT','No'],['build-apt-client','Compilar cliente GUI APT','No'],['c2-protocol','go build ./... en c2-protocol','Sí'],['c2-status','Mostrar c2-dect.conf','Sí'],['installer','Ejecutar instalador de C2-DECT','No']];
+  c2.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<td class="cmd">'+r[0]+'</td><td class="dim">'+r[1]+'</td><td>'+(r[2]==='Sí'?'<span class="ok">Sí</span>':'<span class="error">No</span>')+'</td>';tb.appendChild(tr);});
+}
+function renderSrvIdx(){
+  const tb=document.getElementById('srv-idx-body');tb.innerHTML='';
+  const idx=[['hostnamectl','systeminfo | findstr ...','Información del sistema','Sí'],['hostname','hostname','Nombre del host','Sí'],['ip addr / ip a','ipconfig /all','Direcciones IP de interfaces','Sí'],['ifconfig','ipconfig /all','Configuración de red','Sí'],['netstat -tulpn','netstat -ano','Puertos y conexiones','Sí'],['ping','ping','Conectividad','Sí'],['ls / ls -l','dir / dir /q','Listar directorio','Sí'],['cat','type','Mostrar archivo','Sí'],['whoami','whoami','Usuario actual','Sí'],['date','date /t','Fecha','Sí'],['clear','cls','Limpiar pantalla','Sí'],['exit / quit','exit','Salir','Sí']];
+  idx.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<td class="cmd">'+r[0]+'</td><td class="dim">'+r[1]+'</td><td class="dim">'+r[2]+'</td><td>'+(r[3]==='Sí'?'<span class="ok">Sí</span>':'<span class="error">No</span>')+'</td>';tb.appendChild(tr);});
+}
+
+/* ========================= MAPA DE SEGMENTOS ========================= */
+function mapaRender(){
+  const comp=srvState.compromiso;
+  const nodes={srv:{ip:'192.168.100.10',nombre:'pardoserver',rol:'servidor'},atk:{ip:'192.168.100.21',nombre:'op1-endpoint',rol:'atacante'},vic:{ip:'192.168.100.22',nombre:'op2-endpoint',rol:'víctima'}};
+  ['n-srv','n-atk','n-vic'].forEach(id=>{
+    const g=document.getElementById(id);const d=nodes[id==='n-srv'?'srv':id==='n-atk'?'atk':'vic'];const c=comp[d.ip];
+    const circle=g.querySelector('circle');
+    if(c){circle.setAttribute('stroke','#e74c3c');circle.setAttribute('style','stroke:#e74c3c;stroke-width:4;filter:drop-shadow(0 0 6px #e74c3c)');g.querySelector('text').textContent='☠';}
+    else if(d.rol==='servidor'){circle.setAttribute('stroke','#2ecc71');circle.removeAttribute('style');g.querySelector('text').textContent='🖥';}
+    else if(d.rol==='atacante'){circle.setAttribute('stroke','#f1c40f');circle.removeAttribute('style');g.querySelector('text').textContent='💻';}
+    else{circle.setAttribute('stroke','#3498db');circle.removeAttribute('style');g.querySelector('text').textContent='💻';}
+  });
+  // conexión ataque
+  const atkLine=document.querySelector('.conn.atk');
+  if(comp['192.168.100.22']){atkLine.setAttribute('stroke','#e74c3c');atkLine.setAttribute('stroke-dasharray','');atkLine.setAttribute('stroke-width','3');}
+  else{atkLine.setAttribute('stroke','#e74c3c');atkLine.setAttribute('stroke-dasharray','6 4');atkLine.setAttribute('stroke-width','2');}
+  document.getElementById('mapa-info').textContent=comp['192.168.100.22']?'▲ ALERTA: 1 segmento comprometido: op2-endpoint (192.168.100.22)':'✓ No hay segmentos comprometidos.';
+  const tb=document.getElementById('mapa-tabla');tb.innerHTML='';
+  const rows=[['Servidor','192.168.100.10','servidor',comp['192.168.100.10']?'COMPROMETIDO':'SEGURO','ssh:22, apache2:80, smbd:445'],['Atacante','192.168.100.21','atacante','ATACANTE','ninguno'],['Víctima','192.168.100.22','víctima',comp['192.168.100.22']?'COMPROMETIDO':'SEGURO','ninguno']];
+  rows.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<td>'+r[0]+'</td><td class="dim">'+r[1]+'</td><td class="dim">'+r[2]+'</td><td class="'+(r[3]==='COMPROMETIDO'?'error':r[3]==='ATACANTE'?'warn':'ok')+' badge-t">'+r[3]+'</td><td class="dim">'+r[4]+'</td>';tb.appendChild(tr);});
+}
+function mapaComprometer(ip){srvState.compromiso[ip]=true;srvAddLog('operator1','op1-endpoint','192.168.100.21',ip,'alerta','Segmento '+ip+' comprometido');mapaRender();srvRefreshLogs();}
+function mapaReset(){srvState.compromiso={'192.168.100.22':false};mapaRender();srvRefreshLogs();}
+
+/* ========================= INICIALIZACIÓN ========================= */
+termClear();
+renderIdx();renderServices();renderC2();renderSrvIdx();mapaRender();srvRefreshLogs();
+
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));}
+</script>
+</body>
+</html>
